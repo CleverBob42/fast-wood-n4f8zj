@@ -1,0 +1,94 @@
+.answer-option {
+  display: block;
+  width: 90%;
+  padding: 1em 1.25em;
+  margin-bottom: 1em;
+  border: 2px solid #e0e0e0;
+  border-radius: 1.5em;
+  background: #fff;
+  font-size: 1.1em;
+  font-weight: 500;
+  text-align: left;
+  transition: background 0.16s, color 0.16s, border 0.16s, box-shadow 0.16s,
+    transform 0.09s;
+  cursor: pointer;
+  box-shadow: 0 2px 8px 0 #0002;
+  position: relative;
+  color: #232323;
+}
+.answer-option.selected {
+  transform: scale(0.97);
+  transition: transform 0.06s;
+  outline: 4px solid #2377ff; /* Blue for selected before submit */
+  outline-offset: -4px;
+  box-shadow: 0 4px 16px #2377ff33, 0 0.5px 1.5px #2377ff22;
+  font-weight: bold;
+  filter: brightness(0.98);
+}
+
+.option-a {
+  background: linear-gradient(90deg, #fffde7 80%, #fff9c4 100%);
+  border-color: #fff9c4;
+}
+.option-b {
+  background: linear-gradient(90deg, #e8f5e9 80%, #b9f6ca 100%);
+  border-color: #c8e6c9;
+}
+.option-c {
+  background: linear-gradient(90deg, #fff3e0 80%, #ffe0b2 100%);
+  border-color: #ffe0b2;
+}
+.option-d {
+  background: linear-gradient(90deg, #ede7f6 80%, #d1c4e9 100%);
+  border-color: #d1c4e9;
+}
+.option-e {
+  background: linear-gradient(90deg, #e1f5fe 80%, #b3e5fc 100%);
+  border-color: #b3e5fc;
+}
+.option-f {
+  background: linear-gradient(90deg, #fce4ec 80%, #f8bbd0 100%);
+  border-color: #f8bbd0;
+}
+
+/* Highlight correct */
+/* Keep your existing .option-a, .option-b, etc for pastel backgrounds! */
+
+@keyframes correct-glow {
+  0% {
+    box-shadow: 0 0 0 0 #43ea7b, 0 2px 8px 0 #0002;
+  }
+  70% {
+    box-shadow: 0 0 16px 8px #43ea7b, 0 2px 8px 0 #0002;
+  }
+  100% {
+    box-shadow: 0 0 0 4px #43ea7b, 0 2px 8px 0 #0002;
+  }
+}
+@keyframes incorrect-glow {
+  0% {
+    box-shadow: 0 0 0 0 #ff5555, 0 2px 8px 0 #0002;
+  }
+  70% {
+    box-shadow: 0 0 16px 8px #ff5555, 0 2px 8px 0 #0002;
+  }
+  100% {
+    box-shadow: 0 0 0 4px #ff5555, 0 2px 8px 0 #0002;
+  }
+}
+.answer-option.correct {
+  animation: correct-glow 2s forwards;
+  border-color: #22c55e !important;
+  font-weight: bold;
+}
+.answer-option.incorrect {
+  animation: incorrect-glow 2s forwards;
+  border-color: #ff5555 !important;
+  font-weight: bold;
+}
+
+.option-q {
+  background-color: #e3f2fd;
+  border-color: #90caf9;
+  color: #1565c0;
+}
