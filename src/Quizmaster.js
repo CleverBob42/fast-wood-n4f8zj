@@ -7,7 +7,6 @@ import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import Scores from "./Scores";
 import QuizSelector from "./QuizSelector";
 import "./styles.css";
-
 const GAME_DOC = "game1";
 
 // Quizmaster.js (near your imports or top of file)
@@ -71,6 +70,7 @@ async function handleSelect(e) {
 
 export default function Quizmaster() {
   // ---- State ----
+  const [gameDocId, setGameDocId] = useState(null); // ✅ Correct place
   const [step, setStep] = useState(1); // 1 = pick quiz/upload CSV, 2 = upload media, 3 = quiz controls
   const [questions, setQuestions] = useState([]);
   const [mediaNeeded, setMediaNeeded] = useState([]);
@@ -175,14 +175,22 @@ export default function Quizmaster() {
   }
 
   // ---- CSV Handling ----
-  const handleCSV = (e) => {
+  const handleCSV = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    Papa.parse(file, {
+    const text = await file.text();
+    const filename = file.name
+      .replace(/\.[^.]+$/, "")
+      .replace(/[^a-zA-Z0-9]/g, "_");
+    const id = `game-${filename}`;
+
+    setGameDocId(id);
+
+    Papa.parse(text, {
       header: true,
       skipEmptyLines: true,
-      complete: (results) => {
-        let qs = results.data
+      complete: async (results) => {
+        const qs = results.data
           .filter(
             (q) =>
               q.CAT === "MULTICHOICE" ||
@@ -191,7 +199,7 @@ export default function Quizmaster() {
           )
           .map((q) => {
             const answers = [q.A1, q.A2, q.A3, q.A4, q.A5, q.A6].filter(
-              (a) => !!a
+              Boolean
             );
             return {
               question: q.Q,
@@ -206,9 +214,22 @@ export default function Quizmaster() {
           });
 
         setQuestions(qs);
-        const needed = getAllMediaFilenames(qs);
-        setMediaNeeded(needed);
-        setStep(needed.length ? 2 : 3);
+        await setDoc(doc(db, "games", id), {
+          questions: qs,
+          current: 0,
+          state: "waiting",
+        });
+
+        const snap = await getDoc(doc(db, "games", id));
+        if (snap.exists()) {
+          const data = snap.data();
+          setSettings({
+            questionTimer: data.questionTimer || 20,
+            backgroundOverride: data.backgroundOverride || null,
+          });
+        }
+
+        setStep(3);
       },
     });
   };
@@ -281,6 +302,7 @@ export default function Quizmaster() {
         <h2>Step 1: Start a Quiz</h2>
         <QuizSelector
           onQuizLoaded={(data) => {
+            setGameDocId(id);
             let qs = data
               .filter((q) => q.CAT === "MULTICHOICE" || q.CAT === "MULTIANSWER")
               .map((q) => {
@@ -415,19 +437,10 @@ export default function Quizmaster() {
       <hr />
 
       {tab === "settings" && (
-        <div
-          style={{
-            background: "#fff",
-            border: "1px solid #eee",
-            borderRadius: 8,
-            padding: 24,
-            marginTop: 18,
-            maxWidth: 340,
-          }}
-        >
+        <div style={{ padding: 24, maxWidth: 400 }}>
           <h3>Quiz Settings</h3>
           <label>
-            Question Timer (seconds):{" "}
+            Question Timer (seconds):
             <input
               type="number"
               min={1}
@@ -439,21 +452,45 @@ export default function Quizmaster() {
                   questionTimer: Number(e.target.value),
                 })
               }
-              style={{ width: 60 }}
+              style={{ marginLeft: 10 }}
+            />
+          </label>
+          <br />
+          <br />
+          <label>
+            Upload Background Image:
+            <input
+              type="file"
+              accept="image/*"
+              onChange={async (e) => {
+                const file = e.target.files[0];
+                if (!file || !gameDocId) return;
+                const fileRef = ref(storage, `media/${file.name}`);
+                await uploadBytes(fileRef, file);
+                const url = await getDownloadURL(fileRef);
+                await updateDoc(doc(db, "games", gameDocId), {
+                  backgroundOverride: url,
+                });
+                setSettings((prev) => ({ ...prev, backgroundOverride: url }));
+                alert("Background updated!");
+              }}
+              style={{ marginLeft: 10 }}
             />
           </label>
           <br />
           <br />
           <button
             onClick={async () => {
-              await updateDoc(doc(db, "games", GAME_DOC), {
-                questionTimer: settings.questionTimer,
-              });
-              alert("Settings saved!");
-              setTab("questions");
+              if (gameDocId) {
+                await updateDoc(doc(db, "games", gameDocId), {
+                  questionTimer: settings.questionTimer,
+                });
+                alert("Settings saved!");
+                setTab("questions");
+              }
             }}
           >
-            Save & Close
+            Save Settings
           </button>
         </div>
       )}
